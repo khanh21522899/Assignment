@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 # Dependencies:
-# python3-dnspython
+# dnspython
 
 import dns.zone as dz
 import dns.query as dq
 import dns.resolver as dr
 import argparse
 
-#axfr = dz.from_xfr(dq.xfr(nameserver, domain))
+
 #Init resolver class
 NS = dr.Resolver()
 
@@ -19,13 +19,12 @@ def AXFR (domain, nameserver):
     try:
         #Perform zone transfer utilize zone transfer for given domain name and server
         axfr = dz.from_xfr(dq.xfr(nameserver, domain))
-
+    
         #Sucessful
         if axfr:
             print('[*] Successful Zone Transfer from {}'.format(nameserver))
-            #Add subdomain to domain list
-            for dnsrecord in axfr:
-                Subdomains.append('{}.{}'.format(dnsrecord.to_text(), domain))
+            for record in axfr.iterate_rdatasets():
+                Subdomains.append('{}.{}    {}'.format(record[0], domain, record[1]))
 
     #Fail: print out something
     except Exception as error:
