@@ -30,6 +30,7 @@ class DNSRetriever:
     
     def read_file (self, path):
         try:
+            #Read a file line by line and return a list
             with open(path, 'r') as file:
                 lines = file.readlines()
                 lines = [line.replace('\n','') for line in lines]
@@ -39,17 +40,21 @@ class DNSRetriever:
             return []
 
     def get_nameserver(self, input_raw_ns):
+        #Take the string input of the name server and process it 2 ways
         result = []
+        #If it contain / character, meaning that is a file path so process it as a file
         if('/' in input_raw_ns):
             paths = input_raw_ns.split(',')
             for path in paths:
                 result.extend(self.read_file(path))
         else:
+            #If not contain / it mean it is IP address so take it as IP
             result = input_raw_ns.split(',')
 
         return result
     
     def get_subdomainlist(self, raw_input):
+        #Take the subdomain list as a file path get the file content as a list
         result = []
         if (raw_input == ''):
             return
@@ -60,6 +65,7 @@ class DNSRetriever:
         return result
     
     def query (self,name, type):
+        
         resolver = self.resolver
         try:
             # Perform the DNS query
@@ -71,6 +77,7 @@ class DNSRetriever:
                 return
             else:
                 print(answers.rrset.to_text())
+                #If a path in output was specify written the output to a file
                 if (self.output != ''):
                     self.write_output(answers.rrset.to_text()+'\n')
                 return answers.rrset.to_text()
@@ -80,6 +87,7 @@ class DNSRetriever:
 
 
     def write_output(self, content):
+            #Written output to a file
             try:
                 with open(self.output, 'a') as file:
                     file.write(content)
@@ -88,6 +96,7 @@ class DNSRetriever:
                 return
 
     def AXFR (self):
+        #Perform a transfer zone query
         result =[]
         for nameserver in self.resolver.nameservers:
 

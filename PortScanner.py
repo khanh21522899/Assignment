@@ -1,7 +1,4 @@
 import socket
-import time
-import threading
-import queue
 import argparse
 
 def get_args():
@@ -10,36 +7,54 @@ def get_args():
    parser.add_argument('-t', '--target', dest='target',default=[], nargs='+', help="The IP target", required=True)
    parser.add_argument('-p', '--port', dest='port',default='', help="Port you wanna scan can specify multiple port, example: -p 22 --> scan port 22; -p 22..36 --> scan port 22 to 36; -p 22,36 --> scan port 22 and 36; -p 12..22,25..33 --> scan port 12 to 22 and 25 to 33")
    parser.add_argument('-o', '--output', dest='output',default='',help='Specify output file path')
+   parser.add_argument('-sV', action='store_true', dest='sV', default=False, help='Banner Grabbling')
    return parser.parse_args()
 
 class PortScanner:
-   def __init__(self, ip, port):
+   def __init__(self, ip, port, banner_grabbling):
       self.ip = ip
+      self.banner_grabbling = banner_grabbling
       self.port = port
-      self.result={}
+      self.result=''
       
    def port_scan(self):
       
       port_range = self.detect_portrange()
-      result = {}
+      
       for i in self.ip:
          print('scanning: ' + i)
-         temp =[]
+         
          for p in port_range:
-            socket.setdefaulttimeout(5)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(5)
             try:
                conn = s.connect_ex((i, p))
                if(conn == 0) :
                   print ('Port %d: OPEN' % (p,))
-                  temp.append(p)
+                  self.result.join('Port %d: OPEN' % (p,) + '\n')
+                  if(self.banner_grabbling == True):
+                     print(self.tcp_banner(i,p))
+                     self.result.join(self.tcp_banner(p)+ '\n')
                s.close()
             except:
                pass
-         result[i]=temp
-      self.result = result
+      
    
+   def tcp_banner(self,ip, port):
+      try:
+         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+         s.settimeout(5)
+         s.connect((ip, port))
+         request = "GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n"
+         s.sendall(request.encode())
+         response = s.recv(1024)
+         result = str(response.decode())
+         return result.split("\n")[0]
+      except s.timeout:
+         return
    
+
+
    def detect_portrange(self):
       #Specified the port range that user want the tool to scan
       port_range = []
@@ -71,6 +86,6 @@ class PortScanner:
 if __name__ == "__main__":
    args = get_args()
     
-   ps = PortScanner(args.target, args.port)
+   ps = PortScanner(args.target, args.port, args.sV)
 
    ps.port_scan()
