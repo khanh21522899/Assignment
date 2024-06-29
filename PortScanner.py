@@ -11,30 +11,37 @@ def get_args():
    return parser.parse_args()
 
 class PortScanner:
-   def __init__(self, ip, port, banner_grabbling):
+   def __init__(self, ip, port, banner_grabbling, output):
       self.ip = ip
       self.banner_grabbling = banner_grabbling
       self.port = port
-      self.result=''
+      self.output = output
+
       
    def port_scan(self):
-      
+      #Dectect the port range of the input
       port_range = self.detect_portrange()
       
       for i in self.ip:
+         #Scanning each ip from the ip array taken from the input
          print('scanning: ' + i)
          
          for p in port_range:
+            #Perform a TCP connection to detect the port is open or not
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(5)
             try:
                conn = s.connect_ex((i, p))
                if(conn == 0) :
                   print ('Port %d: OPEN' % (p,))
-                  self.result.join('Port %d: OPEN' % (p,) + '\n')
+                  if(self.output != ''):
+                     self.write_output('\nPort %d: OPEN  \n' % (p,))
+                  #If banner grabbling setting to True do the banner grabbling too
                   if(self.banner_grabbling == True):
                      print(self.tcp_banner(i,p))
-                     self.result.join(self.tcp_banner(p)+ '\n')
+                     if(self.output != ''):
+                        self.write_output(self.tcp_banner(i,p))
+
                s.close()
             except:
                pass
@@ -42,6 +49,7 @@ class PortScanner:
    
    def tcp_banner(self,ip, port):
       try:
+         #Perform a TCP connection with some data send to the server to retrieve the banner
          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
          s.settimeout(5)
          s.connect((ip, port))
@@ -53,7 +61,9 @@ class PortScanner:
       except s.timeout:
          return
    
-
+   def write_output(self, content):
+               with open(self.output, 'a') as file:
+                  file.write(content)
 
    def detect_portrange(self):
       #Specified the port range that user want the tool to scan
@@ -86,6 +96,6 @@ class PortScanner:
 if __name__ == "__main__":
    args = get_args()
     
-   ps = PortScanner(args.target, args.port, args.sV)
+   ps = PortScanner(args.target, args.port, args.sV, args.output)
 
    ps.port_scan()
